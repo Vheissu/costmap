@@ -2,6 +2,8 @@
 
 Doughmap is a client-side web app for tracking recurring expenses and visualizing yearly impact in a colorful treemap-style mosaic. It is built with Web Components (no framework), TypeScript, Tailwind CSS, and IndexedDB for local-only persistence.
 
+Try it live: [https://doughmap.com](https://doughmap.com/)
+
 ## Getting Started
 
 ```bash
