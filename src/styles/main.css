@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background: radial-gradient(circle at top, #fff7ed, #fef2f2 45%, #f1f5f9 100%);
+  min-height: 100vh;
+}
+
+.treemap-tile {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.treemap-tile:hover {
+  transform: scale(1.02);
+}
+
+.modal-backdrop {
+  backdrop-filter: blur(6px);
+}
