@@ -1,5 +1,9 @@
 export type Frequency = 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'yearly' | 'one_off';
 
+export type ExpenseStatus = 'active' | 'cancelled' | 'archived';
+
+export type Period = 'year' | 'month' | 'week';
+
 export interface Expense {
   id: string;
   name: string;
@@ -7,9 +11,10 @@ export interface Expense {
   frequency: Frequency;
   categoryId: string;
   notes?: string;
-  status: 'active' | 'cancelled' | 'archived';
+  status: ExpenseStatus;
   createdAt: number;
   updatedAt: number;
+  cancelledAt?: number;
 }
 
 export interface Category {
@@ -24,7 +29,7 @@ export interface Recommendation {
   description: string;
   savingsYearly: number;
   effort: 'low' | 'medium' | 'high';
-  type: 'cheaper' | 'free' | 'bundle' | 'negotiate' | 'cancel';
+  type: 'cheaper' | 'free' | 'bundle' | 'negotiate' | 'cancel' | 'annual';
   actionSteps?: string[];
 }
 
@@ -32,6 +37,8 @@ export interface AppSettings {
   id: 'app-settings';
   includeOneOffs: boolean;
   groupByCategory: boolean;
+  currency?: string;
+  period?: Period;
 }
 
 export interface TreemapItem {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toMonthly, toYearly } from '../yearly';
+import { toMonthly, toPeriod, toYearly } from '../yearly';
 import type { Frequency } from '../../../types';
 
 describe('yearly conversions', () => {
@@ -21,5 +21,11 @@ describe('yearly conversions', () => {
 
   it('converts yearly totals to monthly', () => {
     expect(toMonthly(120)).toBe(10);
+  });
+
+  it('converts yearly totals to any display period', () => {
+    expect(toPeriod(520, 'year')).toBe(520);
+    expect(toPeriod(520, 'week')).toBe(10);
+    expect(toPeriod(120, 'month')).toBe(10);
   });
 });

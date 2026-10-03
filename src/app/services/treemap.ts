@@ -1,140 +1,84 @@
 import type { TreemapItem, TreemapNode } from '../../types';
 
-type AreaNode = TreemapNode & { area: number };
+type Sized = { item: TreemapItem; area: number };
 
-const sumAreas = (nodes: AreaNode[]) => nodes.reduce((sum, node) => sum + node.area, 0);
+type Rect = { x: number; y: number; width: number; height: number };
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-type GridRect = {
-  col: number;
-  row: number;
-  cols: number;
-  rows: number;
-};
-
-const buildGrid = (rows: number, cols: number) => {
-  return Array.from({ length: rows }, () => Array.from({ length: cols }, () => false));
-};
-
-const canPlace = (grid: boolean[][], rect: GridRect) => {
-  if (rect.row + rect.rows > grid.length) return false;
-  if (rect.col + rect.cols > grid[0].length) return false;
-  for (let r = rect.row; r < rect.row + rect.rows; r += 1) {
-    for (let c = rect.col; c < rect.col + rect.cols; c += 1) {
-      if (grid[r][c]) return false;
-    }
+/** Aspect ratio of the worst tile if `row` is laid along a side of length `side`. */
+const worstRatio = (row: Sized[], side: number) => {
+  let sum = 0;
+  let max = -Infinity;
+  let min = Infinity;
+  for (const entry of row) {
+    sum += entry.area;
+    if (entry.area > max) max = entry.area;
+    if (entry.area < min) min = entry.area;
   }
-  return true;
+  const sideSq = side * side;
+  const sumSq = sum * sum;
+  return Math.max((sideSq * max) / sumSq, sumSq / (sideSq * min));
 };
 
-const place = (grid: boolean[][], rect: GridRect) => {
-  for (let r = rect.row; r < rect.row + rect.rows; r += 1) {
-    for (let c = rect.col; c < rect.col + rect.cols; c += 1) {
-      grid[r][c] = true;
-    }
+const layoutRow = (row: Sized[], rect: Rect, output: TreemapNode[], isLast: boolean) => {
+  const sum = row.reduce((total, entry) => total + entry.area, 0);
+
+  if (rect.width >= rect.height) {
+    // Lay the row as a column down the left edge.
+    const columnWidth = isLast ? rect.width : sum / rect.height;
+    let offset = rect.y;
+    row.forEach((entry, index) => {
+      const height =
+        index === row.length - 1 ? rect.y + rect.height - offset : entry.area / columnWidth;
+      output.push({ ...entry.item, x: rect.x, y: offset, width: columnWidth, height });
+      offset += height;
+    });
+    rect.x += columnWidth;
+    rect.width -= columnWidth;
+  } else {
+    // Lay the row along the top edge.
+    const rowHeight = isLast ? rect.height : sum / rect.width;
+    let offset = rect.x;
+    row.forEach((entry, index) => {
+      const width =
+        index === row.length - 1 ? rect.x + rect.width - offset : entry.area / rowHeight;
+      output.push({ ...entry.item, x: offset, y: rect.y, width, height: rowHeight });
+      offset += width;
+    });
+    rect.y += rowHeight;
+    rect.height -= rowHeight;
   }
 };
 
-const findPlacement = (grid: boolean[][], cells: number) => {
-  const rows = grid.length;
-  const cols = grid[0].length;
-  const maxCols = Math.min(cols, Math.max(1, Math.round(Math.sqrt(cells * (cols / rows)))));
-
-  for (let tryCols = maxCols; tryCols >= 1; tryCols -= 1) {
-    const tryRows = Math.ceil(cells / tryCols);
-    if (tryRows > rows) continue;
-    for (let r = 0; r <= rows - tryRows; r += 1) {
-      for (let c = 0; c <= cols - tryCols; c += 1) {
-        const rect = { row: r, col: c, rows: tryRows, cols: tryCols };
-        if (canPlace(grid, rect)) {
-          return rect;
-        }
-      }
-    }
-  }
-
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      if (!grid[r][c]) {
-        return { row: r, col: c, rows: 1, cols: 1 };
-      }
-    }
-  }
-  return null;
-};
-
+/**
+ * Squarified treemap (Bruls, Huizing & van Wijk). Every positive item is placed,
+ * tile areas are exactly proportional to value, and tiles stay close to square.
+ */
 export const generateTreemap = (items: TreemapItem[], width: number, height: number): TreemapNode[] => {
   if (width <= 0 || height <= 0) return [];
-  const total = items.reduce((sum, item) => sum + item.value, 0);
+  const positive = items.filter((item) => Number.isFinite(item.value) && item.value > 0);
+  const total = positive.reduce((sum, item) => sum + item.value, 0);
   if (total <= 0) return [];
 
-  const nodes: AreaNode[] = items
-    .filter((item) => item.value > 0)
-    .map((item) => ({
-      ...item,
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      area: (item.value / total) * width * height
-    }));
-
-  nodes.sort((a, b) => b.area - a.area);
+  const scale = (width * height) / total;
+  const queue: Sized[] = positive
+    .map((item) => ({ item, area: item.value * scale }))
+    .sort((a, b) => b.area - a.area);
 
   const output: TreemapNode[] = [];
-  const targetCell = clamp(Math.round(width / 5.5), 150, 240);
-  const columns = Math.max(4, Math.round(width / targetCell));
-  const cellWidth = width / columns;
-  const baseRows = Math.max(4, Math.round(height / cellWidth));
-  const rows = Math.max(baseRows, Math.ceil(nodes.length / columns));
-  const cellHeight = height / rows;
-  const totalCells = rows * columns;
+  const rect: Rect = { x: 0, y: 0, width, height };
+  let row: Sized[] = [];
 
-  const rawCells = nodes.map((node) => (node.area / (width * height)) * totalCells);
-  const floorCells = rawCells.map((value) => Math.max(1, Math.floor(value)));
-  let allocated = floorCells.reduce((sum, value) => sum + value, 0);
-  const remainders = rawCells.map((value, index) => ({
-    index,
-    remainder: value - Math.floor(value)
-  }));
-
-  if (allocated > totalCells) {
-    const over = allocated - totalCells;
-    const sorted = floorCells
-      .map((value, index) => ({ index, value }))
-      .sort((a, b) => a.value - b.value);
-    for (let i = 0; i < over; i += 1) {
-      const item = sorted[i % sorted.length];
-      if (floorCells[item.index] > 1) {
-        floorCells[item.index] -= 1;
-      }
-    }
-    allocated = floorCells.reduce((sum, value) => sum + value, 0);
-  }
-
-  if (allocated < totalCells) {
-    const missing = totalCells - allocated;
-    remainders.sort((a, b) => b.remainder - a.remainder);
-    for (let i = 0; i < missing; i += 1) {
-      const target = remainders[i % remainders.length];
-      floorCells[target.index] += 1;
+  for (let index = 0; index < queue.length; index += 1) {
+    const entry = queue[index];
+    const side = Math.min(rect.width, rect.height);
+    if (row.length === 0 || worstRatio([...row, entry], side) <= worstRatio(row, side)) {
+      row.push(entry);
+    } else {
+      layoutRow(row, rect, output, false);
+      row = [entry];
     }
   }
 
-  const grid = buildGrid(rows, columns);
-
-  nodes.forEach((node, index) => {
-    const cells = floorCells[index];
-    const rect = findPlacement(grid, cells);
-    if (!rect) return;
-    place(grid, rect);
-    node.x = rect.col * cellWidth;
-    node.y = rect.row * cellHeight;
-    node.width = rect.cols * cellWidth;
-    node.height = rect.rows * cellHeight;
-    output.push(node);
-  });
-
+  if (row.length) layoutRow(row, rect, output, true);
   return output;
 };
