@@ -83,12 +83,13 @@ class ExpenseList extends HTMLElement {
     if (!this.rows || !this.summary) return;
     const listed = store.listedExpenses;
     const key = JSON.stringify([
-      listed.map((e) => [e.id, e.updatedAt, e.status]),
+      listed.map((e) => [e.id, e.updatedAt, e.status, e.categoryId]),
       state.currency,
       state.period,
       state.includeOneOffs,
       state.selectedExpenseId,
-      state.categories.length
+      state.search,
+      state.categories.map((c) => c.color + c.name)
     ]);
     if (key === this.lastKey) return;
     this.lastKey = key;
