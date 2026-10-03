@@ -36,6 +36,16 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: OTHER_CATEGORY_ID, name: 'Other', color: '#8A867D' }
 ];
 
+/**
+ * Default categories always exist with their current names and colours;
+ * anything the person created themselves is kept after them.
+ */
+export const mergeWithDefaults = (categories: Category[]) => {
+  const defaultIds = new Set(DEFAULT_CATEGORIES.map((category) => category.id));
+  const extras = categories.filter((category) => !defaultIds.has(category.id));
+  return [...DEFAULT_CATEGORIES, ...extras];
+};
+
 /** Colours handed to categories people create themselves, in order. */
 export const CUSTOM_CATEGORY_COLORS = ['#B5651D', '#2A8FBD', '#C2A000', '#6B8E23', '#D65F5F', '#7D6B5D'];
 

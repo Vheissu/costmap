@@ -1,41 +1,44 @@
 import { Database } from './services/db';
-import { DEFAULT_CATEGORIES, store } from './store';
+import { mergeWithDefaults, store } from './store';
+import { setDatabase } from './actions';
 import '../components/app-shell';
 
-export const bootstrap = async () => {
-  const db = new Database();
+const loadFromDatabase = async (db: Database) => {
   await db.init();
-
   const [expenses, categories, settings] = await Promise.all([
     db.listExpenses(),
     db.listCategories(),
     db.getSettings()
   ]);
 
-  if (categories.length === 0) {
-    await db.saveCategories(DEFAULT_CATEGORIES);
-    store.setState({ categories: DEFAULT_CATEGORIES });
-  } else {
-    const defaultIds = new Set(DEFAULT_CATEGORIES.map((category) => category.id));
-    const extras = categories.filter((category) => !defaultIds.has(category.id));
-    const merged = [...DEFAULT_CATEGORIES, ...extras];
-    await db.saveCategories(merged);
-    store.setState({ categories: merged });
-  }
+  const merged = mergeWithDefaults(categories);
+  await db.saveCategories(merged);
 
-  store.setState({ expenses });
+  store.setState({ expenses, categories: merged });
   if (settings) {
     store.setState({
       includeOneOffs: settings.includeOneOffs,
-      groupByCategory: settings.groupByCategory
+      groupByCategory: settings.groupByCategory,
+      ...(settings.currency ? { currency: settings.currency } : {}),
+      ...(settings.period ? { period: settings.period } : {})
     });
+  }
+};
+
+export const bootstrap = async () => {
+  const db = new Database();
+  try {
+    await loadFromDatabase(db);
+    setDatabase(db);
+  } catch (error) {
+    // Private browsing modes and locked-down browsers can refuse IndexedDB.
+    // Keep the app usable in memory and tell the person.
+    console.error('[doughmap] IndexedDB unavailable', error);
+    setDatabase(null);
+    store.setState({ persistent: false });
   }
 
   const root = document.querySelector('#app');
   if (!root) return;
-
-  const shell = document.createElement('app-shell') as any;
-  shell.database = db;
-  root.innerHTML = '';
-  root.appendChild(shell);
+  root.replaceChildren(document.createElement('app-shell'));
 };

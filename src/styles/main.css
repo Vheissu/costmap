@@ -1,27 +1,129 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Palette from an accountant's columnar ledger pad: buff paper, green
+  ruling, black ink for entries, red ink for totals. Dark mode is the same
+  book under a desk lamp, not an inverted page.
+*/
 :root {
   color-scheme: light;
+  --paper: #f4f0e4;
+  --paper-raised: #fbf9f2;
+  --paper-sunk: #ebe5d4;
+  --ink: #1d2230;
+  --ink-soft: #565b66;
+  --ink-faint: #7c7f86;
+  --on-ink: #fbf9f2;
+  --rule: #cfdcc9;
+  --rule-strong: #93b18f;
+  --red-ink: #a8261d;
+  --save-ink: #2c6a36;
+  --save-wash: #dfeedb;
+  --warn-ink: #8a5300;
+  --warn-wash: #f6e7c8;
+  --focus: #1d2230;
+  --sheet-shadow: 0 1px 0 rgba(29, 34, 48, 0.06), 0 12px 32px -12px rgba(29, 34, 48, 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --paper: #16191e;
+    --paper-raised: #1d2128;
+    --paper-sunk: #111317;
+    --ink: #ece6d6;
+    --ink-soft: #b0aca2;
+    --ink-faint: #85837c;
+    --on-ink: #16191e;
+    --rule: #2b3530;
+    --rule-strong: #4a6250;
+    --red-ink: #ef7b6f;
+    --save-ink: #8fd39b;
+    --save-wash: #1f3324;
+    --warn-ink: #f0c27a;
+    --warn-wash: #3a2e17;
+    --focus: #ece6d6;
+    --sheet-shadow: 0 0 0 1px #2b3530, 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  background: radial-gradient(circle at top, #fff7ed, #fef2f2 45%, #f1f5f9 100%);
+  margin: 0;
   min-height: 100vh;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Public Sans Variable', 'Public Sans', ui-sans-serif, sans-serif;
+  font-feature-settings: 'tnum' 1;
 }
 
-.treemap-tile {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+@layer components {
+  .figures {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* The accountant's double rule under a total. */
+  .total-rule {
+    border-bottom: 3px double var(--red-ink);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[3px] px-3.5 py-2 text-sm font-semibold leading-none transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-on-ink hover:opacity-90;
+  }
+  .btn-outline {
+    @apply btn border border-rule-strong bg-raised text-ink hover:bg-sunk;
+  }
+  .btn-ghost {
+    @apply btn text-ink-soft hover:bg-sunk hover:text-ink;
+  }
+  .btn-danger {
+    @apply btn border border-red bg-raised text-red hover:bg-sunk;
+  }
+
+  .field {
+    @apply w-full rounded-[3px] border border-rule-strong bg-raised px-3 py-2 text-[15px] text-ink placeholder:text-ink-faint;
+  }
+  .field-label {
+    @apply mb-1 block text-sm font-semibold text-ink;
+  }
+
+  .segmented {
+    @apply inline-flex rounded-[3px] border border-rule-strong bg-raised p-0.5;
+  }
+  .segmented > button {
+    @apply rounded-[2px] px-2.5 py-1 text-xs font-semibold text-ink-soft transition-colors hover:text-ink;
+  }
+  .segmented > button[aria-pressed='true'] {
+    @apply bg-ink text-on-ink;
+  }
 }
 
-.treemap-tile:hover {
-  transform: scale(1.02);
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-.modal-backdrop {
-  backdrop-filter: blur(6px);
+dialog {
+  color: var(--ink);
+}
+
+dialog::backdrop {
+  background: rgba(17, 19, 23, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

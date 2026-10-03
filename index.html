@@ -3,10 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Doughmap</title>
+    <title>Doughmap: see what your bills cost in a year</title>
+    <meta
+      name="description"
+      content="Add your bills and subscriptions and see what each one really costs per year. Private by design: your data stays in your browser."
+    />
+    <meta name="theme-color" content="#F4F0E4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16191E" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
-  <body class="bg-neutral-cream text-slate-900">
-    <div id="app"></div>
+  <body>
+    <div id="app">
+      <noscript>Doughmap needs JavaScript to run.</noscript>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
